@@ -12,6 +12,8 @@ REL_DIR="${ROOT}/releases/${RELEASE_ID}"
 CUR_LINK="${ROOT}/current"
 ENV_FILE="${ROOT}/shared/.env"
 
+mkdir -p "${ROOT}/releases" "${ROOT}/shared" "${ROOT}/shared/data"
+
 if [[ ! -d "${REL_DIR}" ]]; then
   echo "Release directory not found: ${REL_DIR}"
   exit 1
@@ -23,6 +25,7 @@ if [[ ! -f "${ENV_FILE}" ]]; then
 fi
 
 ln -sfn "${REL_DIR}" "${CUR_LINK}"
+docker compose --env-file "${ENV_FILE}" -f "${CUR_LINK}/docker-compose.yml" config >/dev/null
 docker compose --env-file "${ENV_FILE}" -f "${CUR_LINK}/docker-compose.yml" pull || true
 docker compose --env-file "${ENV_FILE}" -f "${CUR_LINK}/docker-compose.yml" up -d
 

@@ -1,0 +1,44 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare release id
+        id: vars
+        run: echo "release_id=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf "%s\n" "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload release
+        run: |
+          RELEASE_DIR="/opt/ragflow/releases/${{ steps.vars.outputs.release_id }}"
+          ssh -i ~/.ssh/id_rsa "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "mkdir -p ${RELEASE_DIR} /opt/ragflow/shared /opt/ragflow/shared/data"
+          tar czf /tmp/release.tgz --exclude='.git' --exclude='.github' -C . .
+          scp -i ~/.ssh/id_rsa /tmp/release.tgz "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${RELEASE_DIR}/release.tgz"
+          ssh -i ~/.ssh/id_rsa "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "cd ${RELEASE_DIR} && tar xzf release.tgz && rm -f release.tgz"
+
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/id_rsa "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "bash /opt/ragflow/releases/${{ steps.vars.outputs.release_id }}/scripts/deploy.sh ${{ steps.vars.outputs.release_id }}"
+
+      - name: Verify
+        run: |
+          ssh -i ~/.ssh/id_rsa "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "docker compose --env-file /opt/ragflow/shared/.env -f /opt/ragflow/current/docker-compose.yml ps"
