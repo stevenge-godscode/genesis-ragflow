@@ -85,4 +85,4 @@ services:
     ports:
       - "${RAGFLOW_HTTP_PORT}:9380"
     volumes:
-      - /opt/ragflow/shared/data/ragflow:/ragflow
+      - /opt/ragflow/shared/data/ragflow:/ragflow/data
