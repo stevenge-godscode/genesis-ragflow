@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:8.0
+    image: ${DOCKERHUB_MIRROR_PREFIX:-}mysql:8.0
     restart: unless-stopped
     environment:
       TZ: ${TZ}
@@ -17,14 +17,14 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine
+    image: ${DOCKERHUB_MIRROR_PREFIX:-}redis:7-alpine
     restart: unless-stopped
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     volumes:
       - /opt/ragflow/shared/data/redis:/data
 
   minio:
-    image: minio/minio:latest
+    image: ${DOCKERHUB_MIRROR_PREFIX:-}minio/minio:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -35,7 +35,7 @@ services:
       - /opt/ragflow/shared/data/minio:/data
 
   opensearch:
-    image: opensearchproject/opensearch:2.14.0
+    image: ${DOCKERHUB_MIRROR_PREFIX:-}opensearchproject/opensearch:2.14.0
     restart: unless-stopped
     environment:
       discovery.type: single-node
