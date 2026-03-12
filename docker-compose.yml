@@ -82,7 +82,16 @@ services:
       OPENAI_API_BASE: ${OPENAI_API_BASE}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_MODEL: ${OPENAI_MODEL}
-    ports:
-      - "${RAGFLOW_HTTP_PORT}:9380"
     volumes:
       - /opt/ragflow/shared/data/ragflow:/ragflow/data
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      ragflow:
+        condition: service_started
+    ports:
+      - "${RAGFLOW_HTTP_PORT}:80"
+    volumes:
+      - ./nginx/ragflow-container.conf:/etc/nginx/conf.d/default.conf:ro
